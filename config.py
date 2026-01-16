@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'hehe'
     from urllib.parse import quote_plus
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         f"mysql+mysqlconnector://{os.environ.get('DB_USER')}:{quote_plus(os.environ.get('DB_PASSWORD'))}@{os.environ.get('DB_HOST')}/{os.environ.get('DB_NAME')}"

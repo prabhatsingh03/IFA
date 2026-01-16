@@ -863,9 +863,8 @@ def create_database(app):
         engine = create_engine(server_url)
         
         # Connect with AUTOCOMMIT to allow CREATE DATABASE command
-        with engine.connect() as conn:
-            conn = conn.execution_options(isolation_level="AUTOCOMMIT")
-            conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {database_name}"))
+        with engine.connect().execution_options(autocommit=True) as conn:
+            conn.execute(text(f"CREATE DATABASE IF NOT EXISTS `{database_name}`"))
             print(f"Database '{database_name}' check/creation completed.")
             
     except Exception as e:
