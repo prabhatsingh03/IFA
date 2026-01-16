@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, make_response
 import base64
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine.url import make_url
 from config import Config
 from datetime import datetime, date
 import os
@@ -85,6 +87,8 @@ class IFAForm(db.Model):
     
     prepared_by = db.Column(db.String(100))
     approved_by = db.Column(db.String(100))
+    
+    is_partial_payment = db.Column(db.Boolean, default=False)
     
     # status = db.Column(db.String(20), default='Pending')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -230,7 +234,7 @@ def index():
 @jwt_required()
 def ifa_form():
     next_ifa_no = get_next_ifa_number()
-    return render_template('ifa_form.html', ifa=None, is_admin=False, next_ifa_no=next_ifa_no)
+    return render_template('ifa_form.html', ifa=None, is_admin=False, next_ifa_no=next_ifa_no, today=date.today())
 
 @app.route('/ifa/submit', methods=['POST'])
 @role_required('USER')
@@ -295,6 +299,8 @@ def submit_ifa():
             amount_gst=get_float('amount_gst'),
             amount_total=get_float('amount_total'),
             amount_40_percent=get_float('amount_40_percent'),
+            
+            is_partial_payment = True if request.form.get('is_partial_payment') == 'on' else False,
             
             prepared_by=request.form.get('prepared_by'),
             
@@ -546,6 +552,116 @@ def get_dropdown_options_by_category(category):
     } for opt in options])
 
 
+# --- User Management Routes ---
+
+@app.route('/admin/users')
+@admin_required
+def admin_users():
+    users = User.query.order_by(User.created_at.desc()).all()
+    return render_template('admin_users.html', users=users)
+
+@app.route('/admin/user/add', methods=['GET', 'POST'])
+@admin_required
+def admin_add_user():
+    if request.method == 'POST':
+        try:
+            username = request.form.get('username')
+            full_name = request.form.get('full_name')
+            password = request.form.get('password')
+            role = request.form.get('role')
+            phone_number = request.form.get('phone_number')
+            
+            if User.query.filter_by(username=username).first():
+                flash('Username already exists', 'error')
+                return render_template('admin_user_form.html', user=None, title="Add User")
+
+            new_user = User(
+                username=username,
+                full_name=full_name,
+                role=role,
+                phone_number=phone_number,
+                is_active=True
+            )
+            new_user.set_password(password)
+            
+            db.session.add(new_user)
+            db.session.commit()
+            
+            flash('User created successfully', 'success')
+            return redirect(url_for('admin_users'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating user: {str(e)}', 'error')
+            return render_template('admin_user_form.html', user=None, title="Add User")
+            
+    return render_template('admin_user_form.html', user=None, title="Add User")
+
+@app.route('/admin/user/<int:id>/edit', methods=['GET', 'POST'])
+@admin_required
+def admin_edit_user(id):
+    user = User.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        try:
+            user.full_name = request.form.get('full_name')
+            user.role = request.form.get('role')
+            user.phone_number = request.form.get('phone_number')
+            user.is_active = 'is_active' in request.form
+            
+            # Only update password if provided
+            password = request.form.get('password')
+            if password:
+                user.set_password(password)
+                
+            db.session.commit()
+            
+            flash('User updated successfully', 'success')
+            return redirect(url_for('admin_users'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating user: {str(e)}', 'error')
+            return render_template('admin_user_form.html', user=user, title="Edit User")
+            
+    return render_template('admin_user_form.html', user=user, title="Edit User")
+
+@app.route('/admin/user/<int:id>/delete', methods=['POST'])
+@admin_required
+def admin_delete_user(id):
+    user = User.query.get_or_404(id)
+    
+    # Prevent deleting yourself
+    current_user_id = int(get_jwt_identity())
+    if user.id == current_user_id:
+        flash('You cannot delete your own account', 'error')
+        return redirect(url_for('admin_users'))
+        
+    try:
+        # We might want to soft delete instead? 
+        # The model has is_active, let's just delete for now as per "Delete" request, 
+        # but usually soft delete is safer. 
+        # However, for full cleanup, actual delete or repurpose is_active.
+        # User model: is_active = db.Column(db.Boolean, default=True)
+        # Check if form was submitted with "Delete" action or just call this route.
+        # Let's Implement DELETE from the list.
+        
+        # If we just want to deactivate:
+        # user.is_active = False
+        # db.session.commit()
+        
+        # If we really want to delete:
+        db.session.delete(user)
+        db.session.commit()
+        
+        flash('User deleted successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting user: {str(e)}', 'error')
+        
+    return redirect(url_for('admin_users'))
+
+
 @app.route('/ceo/dashboard')
 @ceo_required
 def ceo_dashboard():
@@ -644,6 +760,10 @@ def update_my_ifa(id):
         ifa.amount_total = get_float('amount_total')
         ifa.amount_40_percent = get_float('amount_40_percent')
         
+
+        
+        ifa.is_partial_payment = True if request.form.get('is_partial_payment') == 'on' else False
+        
         ifa.prepared_by = request.form.get('prepared_by')
         # ifa.approved_by = ... # User cannot approve
         
@@ -711,7 +831,10 @@ def update_ifa(id):
         ifa.amount_40_percent = get_float('amount_40_percent')
         
         ifa.prepared_by = request.form.get('prepared_by')
+        ifa.prepared_by = request.form.get('prepared_by')
         ifa.approved_by = request.form.get('approved_by')
+        
+        ifa.is_partial_payment = True if request.form.get('is_partial_payment') == 'on' else False
         
         # Admin specific
         # ifa.status = request.form.get('status')
@@ -722,7 +845,67 @@ def update_ifa(id):
     except Exception as e:
         return f"Error updating: {str(e)}", 400
 
+def create_database(app):
+    try:
+        db_uri = app.config['SQLALCHEMY_DATABASE_URI']
+        # Skip for SQLite as it creates file automatically or handles differently
+        if db_uri.startswith('sqlite'):
+            return
+            
+        url = make_url(db_uri)
+        database_name = url.database
+        
+        # Connect to server without selecting a specific database by removing database name from URL
+        # We use strict=False to allow potentially missing components if applicable, but standard URL works.
+        # set(database='') creates a URL with no database component.
+        server_url = url.set(database='')
+        
+        engine = create_engine(server_url)
+        
+        # Connect with AUTOCOMMIT to allow CREATE DATABASE command
+        with engine.connect() as conn:
+            conn = conn.execution_options(isolation_level="AUTOCOMMIT")
+            conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {database_name}"))
+            print(f"Database '{database_name}' check/creation completed.")
+            
+    except Exception as e:
+        print(f"Warning: Database creation check failed: {e}")
+
+def seed_admin_user(app):
+    try:
+        admin_email = os.environ.get('ADMIN_EMAIL')
+        admin_password = os.environ.get('ADMIN_PASSWORD')
+        
+        if not admin_email or not admin_password:
+            print("Warning: ADMIN_EMAIL or ADMIN_PASSWORD not set in environment. Skipping admin creation.")
+            return
+
+        with app.app_context():
+            # Check if admin already exists
+            user = User.query.filter_by(username=admin_email).first()
+            if user:
+                print(f"Admin user {admin_email} already exists.")
+                return
+            
+            # Create Admin
+            print(f"Creating Admin user: {admin_email}")
+            admin = User(
+                username=admin_email,
+                full_name='System Admin',
+                phone_number='0000000000',
+                role='ADMIN'
+            )
+            admin.set_password(admin_password)
+            db.session.add(admin)
+            db.session.commit()
+            print("Admin user created successfully.")
+            
+    except Exception as e:
+        print(f"Error seeding admin user: {e}")
+
 if __name__ == '__main__':
     with app.app_context():
+        create_database(app)
         db.create_all()
+        seed_admin_user(app)
     app.run(debug=True)

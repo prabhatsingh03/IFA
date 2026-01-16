@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - IFA Admin</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/login_icon.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--primary-dark);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        /* Alert Styles */
+        .alert-error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .alert-success,
+        .alert-message,
+        .alert-info {
+            background-color: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-header">
+        <div class="d-flex align-center gap-20">
+            <h1 class="dashboard-title"><i class="fas fa-user-edit" style="margin-right: 10px;"></i> {{ title }}</h1>
+        </div>
+        <div class="d-flex align-center gap-20">
+            <a href="{{ url_for('admin_users') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back to
+                Users</a>
+        </div>
+    </div>
+
+    <div class="container fade-in" style="margin-top: 30px; max-width: 600px;">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}" style="margin-bottom: 20px; padding: 15px; border-radius: 8px;">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <form method="POST">
+
+                <div class="form-group">
+                    <label for="username">Email / Username</label>
+                    <input type="email" id="username" name="username" class="form-control"
+                        value="{{ user.username if user else '' }}" {% if user %}readonly
+                        style="background-color: #f3f4f6; cursor: not-allowed;" {% else %}required
+                        placeholder="user@adventz.com" {% endif %}>
+                    {% if not user %}
+                    <small style="color: var(--text-muted); margin-top: 5px; display: block;">Must end with @adventz.com
+                        (enforced usually, check validation)</small>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="full_name">Full Name</label>
+                    <input type="text" id="full_name" name="full_name" class="form-control" required
+                        value="{{ user.full_name if user else '' }}" placeholder="John Doe">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" {% if not user
+                        %}required{% endif %}
+                        placeholder="{% if user %}Leave blank to keep current password{% else %}Enter password{% endif %}">
+                </div>
+
+                <div class="form-group">
+                    <label for="phone_number">Phone Number</label>
+                    <input type="tel" id="phone_number" name="phone_number" class="form-control"
+                        value="{{ user.phone_number if user else '' }}" placeholder="1234567890">
+                </div>
+
+                <div class="form-group">
+                    <label for="role">Role</label>
+                    <select id="role" name="role" class="form-control">
+                        <option value="USER" {% if user and user.role=='USER' %}selected{% endif %}>User</option>
+                        <option value="ADMIN" {% if user and user.role=='ADMIN' %}selected{% endif %}>Admin</option>
+                        <option value="CEO" {% if user and user.role=='CEO' %}selected{% endif %}>CEO</option>
+                    </select>
+                </div>
+
+                {% if user %}
+                <div class="form-group">
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="is_active" name="is_active" {% if user.is_active %}checked{% endif
+                            %}>
+                        <label for="is_active" style="margin-bottom: 0;">Active Account</label>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div style="margin-top: 30px; display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        <i class="fas fa-save" style="margin-right: 5px;"></i> {{ 'Update User' if user else 'Create
+                        User' }}
+                    </button>
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

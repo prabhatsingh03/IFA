@@ -206,6 +206,11 @@
 
         /* --- PRINT STYLES (Strict Reset) --- */
         @media print {
+            @page {
+                size: A4;
+                margin: 10mm;
+            }
+
             body {
                 background: white;
                 padding: 0;
@@ -213,11 +218,11 @@
             }
 
             .ifa-container {
-                width: 100%;
-                margin: 0;
-                padding: 0 20px;
-                box-shadow: none;
-                border: none;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
             }
 
             /* Revert inputs to traditional look for print */
@@ -239,6 +244,7 @@
             select {
                 -webkit-appearance: none;
                 -moz-appearance: none;
+                appearance: none;
                 text-indent: 1px;
                 text-overflow: '';
             }
@@ -260,6 +266,18 @@
             th,
             td {
                 border: 1px solid #000 !important;
+                padding: 4px !important;
+                font-size: 11px !important;
+                line-height: 1.2 !important;
+                word-wrap: break-word !important;
+                word-break: break-word !important;
+                overflow-wrap: break-word !important;
+                max-width: 200px !important;
+            }
+
+            table {
+                width: 100% !important;
+                table-layout: fixed !important;
             }
 
             /* Hide UI elements */
@@ -359,7 +377,7 @@
                     {% if is_doc %}
                     <span class="doc-value">{{ ifa.ifa_date if ifa else '' }}</span>
                     {% else %}
-                    <input type="date" name="ifa_date" value="{{ ifa.ifa_date if ifa else '' }}" required>
+                    <input type="date" name="ifa_date" value="{{ ifa.ifa_date if ifa else today }}" required>
                     {% endif %}
                 </div>
             </div>
@@ -416,7 +434,7 @@
                     {% if is_doc %}
                     <span class="doc-value">{{ ifa.po_date if ifa else '' }}</span>
                     {% else %}
-                    <input type="date" name="po_date" value="{{ ifa.po_date if ifa else '' }}">
+                    <input type="date" name="po_date" value="{{ ifa.po_date if ifa else today }}">
                     {% endif %}
                 </td>
             </tr>
@@ -551,7 +569,7 @@
                     <span class="doc-value">{{ ifa.proforma_invoice_date if ifa else '' }}</span>
                     {% else %}
                     <input type="date" name="proforma_invoice_date"
-                        value="{{ ifa.proforma_invoice_date if ifa else '' }}">
+                        value="{{ ifa.proforma_invoice_date if ifa else today }}">
                     {% endif %}
                 </td>
             </tr>
@@ -618,7 +636,25 @@
                     style="width: 150px; text-align: right; font-weight: bold; background:transparent; border:none;">
                 {% endif %}
             </div>
-            <div style="font-weight: bold; background-color: #e6f0ff;">
+
+            <!-- Partial Payment Checkbox (Form Only) -->
+            {% if not is_doc %}
+            <div style="padding: 5px 10px; border-bottom: 1px solid #eee; background-color: #fff;">
+                <label style="display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer;">
+                    <input type="checkbox" name="is_partial_payment" id="chkPartialPayment" {% if ifa and
+                        ifa.is_partial_payment %}checked{% endif %}>
+                    Partial Payment?
+                </label>
+            </div>
+            {% endif %}
+
+            <!-- Percentage Section:
+                 - Web: Hidden/Shown via JS based on Checkbox
+                 - Doc: Only Rendered if is_partial_payment is True
+            -->
+            <div id="sectionPartialPayment"
+                style="font-weight: bold; background-color: #e6f0ff; {% if not ifa or not ifa.is_partial_payment %}display: none;{% endif %}">
+
                 <!-- Dynamic Percentage Label/Input -->
                 {% set calculated_percent = 40 %}
                 {% if ifa and ifa.amount_total and ifa.amount_40_percent %}
@@ -911,6 +947,55 @@
             if (percentInput) {
                 percentInput.addEventListener('input', function () { // Update 40% value only
                     updateInvoiceTotals(false);
+                });
+            }
+
+            // --- Partial Payment Checkbox Listener ---
+            const chkPartial = document.getElementById('chkPartialPayment');
+            const sectionPartial = document.getElementById('sectionPartialPayment');
+
+            if (chkPartial && sectionPartial) {
+                chkPartial.addEventListener('change', function () {
+                    if (this.checked) {
+                        sectionPartial.style.display = 'block'; // Or flex, if layout requires
+                        // Ideally trigger recalc just in case, though 0 visibility doesn't mean 0 value.
+                        // But usually if hidden, value shouldn't matter or be 0? 
+                        // Prompt implies: "If not selected... don't show Partial Payment word"
+                        // It doesn't explicitly say value must be 0, but logical implication for payment.
+                        // Let's ensure updateInvoiceTotals runs to refresh the calculated field if shown.
+                        updateInvoiceTotals(false);
+                    } else {
+                        sectionPartial.style.display = 'none';
+                        // Optional: Clear the value? 
+                        // If unchecked, usually we don't clear until submit, or maybe backend handles it.
+                        // But for UI clarity, maybe set value to 0 or leave it?
+                        // Let's leave value as is, just hidden.
+                    }
+                });
+
+                // Initial State Check (already handled inline style, but good to reinforce)
+                if (!chkPartial.checked) {
+                    sectionPartial.style.display = 'none';
+                } else {
+                    sectionPartial.style.display = 'flex'; // Use flex to match original div style (it had child divs)
+                    sectionPartial.style.justifyContent = 'space-between'; // Restore layout if needed
+                    sectionPartial.style.alignItems = 'center';
+                    // The original div style class/attributes are preserved, but 'display: block' might break flex layout.
+                    // Let's check original div style
+                    // <div style="display:flex ..."> was NOT on the wrapper. The wrapper was <div style="font-weight: bold...">
+                    // Inside wrapper: <span> and <input> (doc) OR <div> and <input> (form)
+                    // The wrapper <div class="amount-box"> <div> ... </div> </div> is flex parent? No amount-box has <div> children.
+                    // .amount-box div { display: flex; justify-content: space-between; ... }
+                    // So we must set display: FLEX to match CSS rule.
+                    sectionPartial.style.display = 'flex';
+                }
+            }
+
+            // Adjust Checkbox Handler for Flex
+            if (chkPartial && sectionPartial) {
+                chkPartial.addEventListener('change', function () {
+                    sectionPartial.style.display = this.checked ? 'flex' : 'none';
+                    if (this.checked) updateInvoiceTotals(false);
                 });
             }
 

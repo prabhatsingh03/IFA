@@ -56,6 +56,8 @@
             <h1 class="dashboard-title"><i class="fas fa-file-invoice" style="margin-right: 10px;"></i> IFA Admin</h1>
         </div>
         <div class="d-flex align-center gap-20">
+            <a href="{{ url_for('admin_users') }}" class="btn btn-primary"
+                style="padding: 8px 16px; font-size: 0.9rem;"><i class="fas fa-users-cog"></i> Manage Users</a>
             <span style="font-weight: 500; color: var(--text-muted);"><i class="fas fa-user-shield"></i> Welcome,
                 Admin</span>
             <a href="{{ url_for('logout') }}" class="btn btn-secondary"><i class="fas fa-sign-out-alt"></i> Logout</a>
