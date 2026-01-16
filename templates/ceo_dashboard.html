@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEO Dashboard - IFA System</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/login_icon.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <div class="dashboard-header">
+        <div class="d-flex align-center gap-20">
+            <h1 class="dashboard-title"><i class="fas fa-chart-line" style="margin-right: 10px;"></i> CEO Overview</h1>
+        </div>
+        <div class="d-flex align-center gap-20">
+            <span style="font-weight: 500; color: var(--text-muted);"><i class="fas fa-user-tie"></i> Welcome,
+                CEO</span>
+            <a href="{{ url_for('logout') }}" class="btn btn-secondary"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+
+    <div class="container fade-in">
+        <div class="d-flex justify-between align-center mb-20">
+            <h2 style="margin: 0; font-size: 1.5rem; color: var(--primary-dark);">All Submissions</h2>
+            <div style="position: relative; width: 300px;">
+                <i class="fas fa-search"
+                    style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                <input type="text" id="searchInput" placeholder="Search by IFA No, Supplier..."
+                    style="padding-left: 35px;">
+            </div>
+        </div>
+
+        <div class="card" style="padding: 0; overflow: hidden;">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>IFA No</th>
+                        <th>Date</th>
+                        <th>Supplier</th>
+                        <th>Project</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ifa in ifas %}
+                    <tr class="clickable-row" data-href="{{ url_for('view_ifa', id=ifa.id) }}"
+                        onclick="window.location.href=this.dataset.href;">
+                        <td>
+                            <div class="d-flex align-center gap-10">
+                                <div
+                                    style="width: 8px; height: 8px; background: var(--primary-color); border-radius: 50%;">
+                                </div>
+                                <span style="font-weight: 600; color: var(--primary-dark);">{{ ifa.ifa_no }}</span>
+                            </div>
+                        </td>
+                        <td>{{ ifa.ifa_date }}</td>
+                        <td>{{ ifa.supplier_name }}</td>
+                        <td>
+                            <span
+                                style="background: var(--primary-light); color: var(--primary-color); padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600;">
+                                {{ ifa.project_name }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('view_ifa', id=ifa.id) }}" class="btn btn-primary"
+                                style="padding: 6px 16px; font-size: 0.85rem;">
+                                <i class="fas fa-eye" style="margin-right: 5px;"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center" style="padding: 60px; color: var(--text-muted);">
+                            <i class="far fa-folder-open"
+                                style="font-size: 3rem; margin-bottom: 15px; color: var(--border-color);"></i>
+                            <p>No submissions found.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('searchInput').addEventListener('keyup', function () {
+            var input, filter, table, tr, td, i, j, txtValue;
+            input = document.getElementById('searchInput');
+            filter = input.value.toUpperCase();
+            table = document.querySelector('.modern-table');
+            tr = table.getElementsByTagName('tr');
+
+            for (i = 1; i < tr.length; i++) {
+                if (tr[i].getElementsByTagName('td').length === 1) continue;
+                tr[i].style.display = 'none';
+                td = tr[i].getElementsByTagName('td');
+                for (j = 0; j < td.length; j++) {
+                    if (td[j]) {
+                        txtValue = td[j].textContent || td[j].innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            tr[i].style.display = '';
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

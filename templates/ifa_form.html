@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice For Approval (IFA)</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/login_icon.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* --- FORM SPECIFIC LAYOUT (Preserved for Print/Structure) --- */
+        body {
+            background-color: #f0f2f5;
+            /* Light contrast for the 'desk' */
+            padding-bottom: 60px;
+        }
+
+        .ifa-container {
+            width: 900px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 40px;
+            box-sizing: border-box;
+            /* Floating Paper Effect */
+            border-radius: 4px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .company {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary-dark);
+            text-align: center;
+            margin-bottom: 5px;
+            font-family: 'Outfit', sans-serif;
+            letter-spacing: 0.5px;
+        }
+
+        .title {
+            text-align: center;
+            margin: 10px 0 30px;
+            font-size: 18px;
+            font-weight: bold;
+            text-decoration: underline;
+            text-transform: uppercase;
+            color: var(--text-main);
+        }
+
+        .row {
+            display: flex;
+            margin-bottom: 15px;
+            font-size: 14px;
+            align-items: center;
+        }
+
+        .label {
+            width: 100px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        /* Table Structure */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #333;
+            /* Darker border for contrast */
+        }
+
+        th,
+        td {
+            padding: 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .section-title {
+            font-weight: 700;
+            margin-top: 30px;
+            text-decoration: underline;
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: var(--primary-color);
+        }
+
+        /* Amount Box Layout */
+        .amount-box {
+            width: 350px;
+            margin-top: 20px;
+            font-size: 14px;
+            background: #fdfdfd;
+            border: 1px solid #eee;
+        }
+
+        .amount-box div {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding: 10px;
+        }
+
+        .amount-box div:last-child {
+            border-bottom: none;
+        }
+
+        .sign {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 60px;
+            font-size: 14px;
+        }
+
+        .sign-block {
+            width: 40%;
+            text-align: center;
+        }
+
+        /* --- INPUT STYLING (Screen Optimization) --- */
+        /* Overriding global styles for specific form look-and-feel on screen */
+        .ifa-container input[type="text"],
+        .ifa-container input[type="date"],
+        .ifa-container input[type="number"],
+        .ifa-container textarea,
+        .ifa-container select {
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 8px 10px;
+            background-color: #f8fafc;
+            transition: all 0.2s;
+            font-weight: 500;
+            width: 100%;
+            font-size: 14px;
+            color: #2d3748;
+        }
+
+        .ifa-container input:focus,
+        .ifa-container textarea:focus,
+        .ifa-container select:focus {
+            background-color: #fff;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+            outline: none;
+        }
+
+        /* Specific override for document values */
+        .ifa-container input[readonly] {
+            background-color: #f1f3f5;
+            color: #495057;
+            cursor: not-allowed;
+            border-color: transparent;
+        }
+
+        /* Admin Controls Area */
+        .admin-controls {
+            margin-top: 40px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            text-align: center;
+        }
+
+        /* Navigation (Back Button) */
+        .admin-nav {
+            max-width: 900px;
+            margin: 20px auto 0;
+            padding: 0 10px;
+        }
+
+        /* Footer Actions */
+        .form-footer-actions {
+            max-width: 900px;
+            margin: 0 auto 60px;
+            padding: 20px 0;
+            border-top: 1px solid #eaeaea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-direction: row-reverse;
+        }
+
+        .form-footer-actions .btn {
+            min-width: 150px;
+        }
+
+        /* --- PRINT STYLES (Strict Reset) --- */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                zoom: 80%;
+            }
+
+            .ifa-container {
+                width: 100%;
+                margin: 0;
+                padding: 0 20px;
+                box-shadow: none;
+                border: none;
+            }
+
+            /* Revert inputs to traditional look for print */
+            .ifa-container input[type="text"],
+            .ifa-container input[type="date"],
+            .ifa-container textarea,
+            .ifa-container select,
+            .ifa-container input[readonly] {
+                background: transparent !important;
+                border: none !important;
+                border-radius: 0;
+                padding: 2px 0;
+                box-shadow: none;
+                color: black !important;
+                font-family: 'Times New Roman', serif;
+            }
+
+            /* Remove select arrow for print if possible */
+            select {
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                text-indent: 1px;
+                text-overflow: '';
+            }
+
+            .section-title {
+                color: #000 !important;
+                text-decoration: underline;
+                margin-top: 20px;
+            }
+
+            .company {
+                color: #000 !important;
+            }
+
+            .title {
+                color: #000 !important;
+            }
+
+            th,
+            td {
+                border: 1px solid #000 !important;
+            }
+
+            /* Hide UI elements */
+            .admin-nav,
+            .admin-controls,
+            .submit-btn,
+            .reset-btn,
+            #successModal,
+            .form-footer-actions {
+                display: none !important;
+            }
+        }
+
+        .auto-grow {
+            resize: none;
+            overflow: hidden;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        /* Styles for DOC static values (Document View Mode) */
+        .doc-value {
+            border-bottom: none;
+            padding: 2px 5px;
+            min-height: 20px;
+            display: inline-block;
+            width: 100%;
+            box-sizing: border-box;
+            font-weight: bold;
+            font-family: 'Times New Roman', serif;
+        }
+
+        .doc-multiline {
+            white-space: pre-wrap;
+            border: none;
+            padding: 5px;
+            text-align: left;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+    {% if not is_doc %}
+    <div class="admin-nav fade-in" style="margin-bottom: 10px;">
+        {% if is_admin %}
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary"
+            style="font-size: 0.85rem; padding: 8px 16px;">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+        {% elif is_ceo %}
+        <a href="{{ url_for('ceo_dashboard') }}" class="btn btn-secondary"
+            style="font-size: 0.85rem; padding: 8px 16px;">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+        {% else %}
+        <a href="{{ url_for('user_dashboard') }}" class="btn btn-secondary"
+            style="font-size: 0.85rem; padding: 8px 16px;">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <form class="ifa-container fade-in" spellcheck="false" method="POST"
+        action="{{ url_for('update_ifa', id=ifa.id) if is_admin else (url_for('update_my_ifa', id=ifa.id) if ifa and user_role == 'USER' else url_for('submit_ifa')) }}"
+        id="ifaForm">
+
+        <div class="top-header">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                {% if is_doc and simon_logo_b64 %}
+                <img src="data:image/png;base64,{{ simon_logo_b64 }}" alt="Simon India Logo" style="max-height: 70px;">
+                {% else %}
+                <img src="{{ url_for('static', filename='images/simon_logo.png') }}" alt="Simon India Logo"
+                    style="max-height: 70px;">
+                {% endif %}
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                {% if is_doc and adventz_logo_b64 %}
+                <img src="data:image/png;base64,{{ adventz_logo_b64 }}" alt="Adventz Logo" style="max-height: 70px;">
+                {% else %}
+                <img src="{{ url_for('static', filename='images/adventz_logo.png') }}" alt="Adventz Logo"
+                    style="max-height: 70px;">
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="company">SIMON INDIA LIMITED</div>
+
+        <div class="title">INVOICE FOR APPROVAL (IFA)</div>
+
+        <div class="row" style="justify-content: space-between;">
+            <div style="display: flex; align-items: center;">
+                <div class="label">Date:</div>
+                <div class="value" style="width: 160px; flex: none;">
+                    {% if is_doc %}
+                    <span class="doc-value">{{ ifa.ifa_date if ifa else '' }}</span>
+                    {% else %}
+                    <input type="date" name="ifa_date" value="{{ ifa.ifa_date if ifa else '' }}" required>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="ifa-no-group" style="display: flex; align-items: center; gap: 10px;">
+                <strong style="color: var(--primary-dark);">IFA No:</strong>
+                {% if is_doc %}
+                <span class="doc-value" style="width: 140px; font-weight: bold;">{{ ifa.ifa_no if ifa else next_ifa_no
+                    }}</span>
+                {% else %}
+                <input type="text" name="ifa_no" value="{{ ifa.ifa_no if ifa else next_ifa_no }}"
+                    placeholder="IFA26XXXXX"
+                    style="width: 140px; font-weight: bold; background: #e2e8f0; border-color: transparent;" readonly
+                    required>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="label">To:</div>
+            <div class="value" style="flex: 1;">
+                {% if is_doc %}
+                <span class="doc-value">{{ ifa.to_person if ifa else '' }}</span>
+                {% else %}
+                <select name="to_person" style="width: 100%;" required>
+                    <option value="" disabled {% if not ifa or not ifa.to_person %}selected{% endif %}>Select Role
+                    </option>
+                    <option value="CFO" {% if ifa and ifa.to_person=='CFO' %}selected{% endif %}>CFO</option>
+                    <option value="CO" {% if ifa and ifa.to_person=='CO' %}selected{% endif %}>CO</option>
+                </select>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="section-title">Summary</div>
+
+        <table>
+            <colgroup>
+                <col style="width: 20%;">
+                <col style="width: 30%;">
+                <col style="width: 20%;">
+                <col style="width: 30%;">
+            </colgroup>
+            <tr>
+                <td><b>PO No</b></td>
+                <td>
+                    {% if is_doc %}
+                    <span class="doc-value">{{ ifa.po_no if ifa else '' }}</span>
+                    {% else %}
+                    <input type="text" name="po_no" value="{{ ifa.po_no if ifa else '' }}">
+                    {% endif %}
+                </td>
+                <td><b>Date</b></td>
+                <td>
+                    {% if is_doc %}
+                    <span class="doc-value">{{ ifa.po_date if ifa else '' }}</span>
+                    {% else %}
+                    <input type="date" name="po_date" value="{{ ifa.po_date if ifa else '' }}">
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td><b>Supplier Name</b></td>
+                <td>
+                    {% if is_doc %}
+                    <span class="doc-value">{{ ifa.supplier_name if ifa else '' }}</span>
+                    {% else %}
+                    <input type="text" name="supplier_name" value="{{ ifa.supplier_name if ifa else '' }}">
+                    {% endif %}
+                </td>
+                <td><b>PO Basic Price (INR)</b></td>
+                <td>
+                    {% if is_doc %}
+                    <span class="doc-value">{{ ifa.po_basic_price | currency if ifa else '' }}</span>
+                    {% else %}
+                    <input type="text" name="po_basic_price" value="{{ ifa.po_basic_price | currency if ifa else '' }}"
+                        id="poBasicPrice">
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td><b>Service Name</b></td>
+                <td>
+                    {% if is_doc %}
+                    <span class="doc-value">{{ ifa.service_name if ifa else '' }}</span>
+                    {% else %}
+                    <input type="text" name="service_name" value="{{ ifa.service_name if ifa else '' }}">
+                    {% endif %}
+                </td>
+                <td><b>GST %</b></td>
+                <td>
+                    {% if is_doc %}
+                    <span class="doc-value">{{ ifa.gst_on_basic | currency if ifa else '' }} ({{ ((ifa.gst_on_basic /
+                        ifa.po_basic_price * 100) | round(2) if ifa and ifa.po_basic_price and ifa.gst_on_basic else 0)
+                        }}%)</span>
+                    {% else %}
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="number" id="gstPercentInput" placeholder="%" style="width: 80px;" min="0" max="100"
+                            step="0.01">
+                        <!-- Hidden input for the actual Amount to be saved -->
+                        <input type="hidden" name="gst_on_basic" id="gstOnBasic"
+                            value="{{ ifa.gst_on_basic if ifa else '' }}">
+                    </div>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td><b>Project Name</b></td>
+                <td colspan="3">
+                    {% if is_doc %}
+                    <span class="doc-value">{{ ifa.project_name if ifa else '' }}</span>
+                    {% else %}
+                    <select name="project_name" style="width: 100%;">
+                        <option value="" disabled {% if not ifa or not ifa.project_name %}selected{% endif %}>Select
+                            Project</option>
+                        <option value="Project A (Chemical)" {% if ifa and ifa.project_name=='Project A (Chemical)'
+                            %}selected{% endif %}>Project A (Chemical)</option>
+                        <option value="Project B (Fertilizer)" {% if ifa and ifa.project_name=='Project B (Fertilizer)'
+                            %}selected{% endif %}>Project B (Fertilizer)</option>
+                        <option value="Project C (Oil & Gas)" {% if ifa and ifa.project_name=='Project C (Oil & Gas)'
+                            %}selected{% endif %}>Project C (Oil & Gas)</option>
+                        <option value="Project D (Power)" {% if ifa and ifa.project_name=='Project D (Power)'
+                            %}selected{% endif %}>Project D (Power)</option>
+                    </select>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td><b>Total PO Value</b></td>
+                <td>
+                    {% if is_doc %}
+                    <span class="doc-value">{{ ifa.total_po_value | currency if ifa else '' }}</span>
+                    {% else %}
+                    <input type="text" name="total_po_value" value="{{ ifa.total_po_value | currency if ifa else '' }}"
+                        id="totalPOValue" readonly style="background-color: #f8fafc; cursor: default;">
+                    {% endif %}
+                </td>
+                <td><b>Payment Term</b></td>
+                <td>
+                    {% if is_doc %}
+                    <div class="doc-multiline">{{ ifa.payment_terms if ifa else '' }}</div>
+                    {% else %}
+                    <textarea rows="3" name="payment_terms"
+                        oninput="autoResize(this)">{{ ifa.payment_terms if ifa else '' }}</textarea>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+
+        <div class="section-title">Recommendation</div>
+
+        <table>
+            <colgroup>
+                <col style="width: 20%;">
+                <col style="width: 30%;">
+                <col style="width: 20%;">
+                <col style="width: 30%;">
+            </colgroup>
+            <tr>
+                <td><b>Invoice Claimed</b></td>
+                <td>
+                    {% if is_doc %}
+                    <span class="doc-value">{{ ifa.invoice_claimed | currency if ifa else '' }}</span>
+                    {% else %}
+                    <input type="text" name="invoice_claimed"
+                        value="{{ ifa.invoice_claimed | currency if ifa else '' }}">
+                    {% endif %}
+                </td>
+                <td><b>Proforma Invoice No.</b></td>
+                <td>
+                    {% if is_doc %}
+                    <span class="doc-value">{{ ifa.proforma_invoice_no if ifa else '' }}</span>
+                    {% else %}
+                    <input type="text" name="proforma_invoice_no" value="{{ ifa.proforma_invoice_no if ifa else '' }}">
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td><b>Passed For</b></td>
+                <td>
+                    {% if is_doc %}
+                    <span class="doc-value">{{ ifa.passed_for | currency if ifa else '' }}</span>
+                    {% else %}
+                    <input type="text" name="passed_for" value="{{ ifa.passed_for | currency if ifa else '' }}">
+                    {% endif %}
+                </td>
+                <td><b>Date</b></td>
+                <td>
+                    {% if is_doc %}
+                    <span class="doc-value">{{ ifa.proforma_invoice_date if ifa else '' }}</span>
+                    {% else %}
+                    <input type="date" name="proforma_invoice_date"
+                        value="{{ ifa.proforma_invoice_date if ifa else '' }}">
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td><b>Advance Paid</b></td>
+                <td>
+                    {% if is_doc %}
+                    <span class="doc-value">{{ ifa.advance_paid if ifa else '' }}</span>
+                    {% else %}
+                    <input type="text" name="advance_paid" value="{{ ifa.advance_paid if ifa else '' }}">
+                    {% endif %}
+                </td>
+                <td><b>Delivery Status</b></td>
+                <td>
+                    {% if is_doc %}
+                    <span class="doc-value">{{ ifa.delivery_status if ifa else '' }}</span>
+                    {% else %}
+                    <input type="text" name="delivery_status" value="{{ ifa.delivery_status if ifa else '' }}">
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td><b>Remark</b></td>
+                <td colspan="3">
+                    {% if is_doc %}
+                    <div class="doc-multiline">{{ ifa.remark if ifa else '' }}</div>
+                    {% else %}
+                    <textarea rows="1" name="remark"
+                        oninput="autoResize(this)">{{ ifa.remark if ifa else '' }}</textarea>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+
+        <div class="amount-box">
+            <div>
+                <span>Basic</span>
+                {% if is_doc %}
+                <span class="doc-value" style="width: 150px; text-align: right;">{{ ifa.amount_basic | currency if ifa
+                    else '' }}</span>
+                {% else %}
+                <input type="text" name="amount_basic" value="{{ ifa.amount_basic | currency if ifa else '' }}"
+                    id="invBasic" style="width: 150px; text-align: right;">
+                {% endif %}
+            </div>
+            <div>
+                <span>GST </span>
+                {% if is_doc %}
+                <span class="doc-value" style="width: 150px; text-align: right;">{{ ifa.amount_gst | currency if ifa
+                    else '' }}</span>
+                {% else %}
+                <input type="text" name="amount_gst" value="{{ ifa.amount_gst | currency if ifa else '' }}" id="invGst"
+                    style="width: 150px; text-align: right;">
+                {% endif %}
+            </div>
+            <div style="font-weight: bold; background-color: #f8fafc;">
+                <span>Total</span>
+                {% if is_doc %}
+                <span class="doc-value" style="width: 150px; text-align: right; font-weight: bold;">{{ ifa.amount_total
+                    | currency if ifa else '' }}</span>
+                {% else %}
+                <input type="text" name="amount_total" value="{{ ifa.amount_total | currency if ifa else '' }}"
+                    id="invTotal" readonly
+                    style="width: 150px; text-align: right; font-weight: bold; background:transparent; border:none;">
+                {% endif %}
+            </div>
+            <div style="font-weight: bold; background-color: #e6f0ff;">
+                <!-- Dynamic Percentage Label/Input -->
+                {% set calculated_percent = 40 %}
+                {% if ifa and ifa.amount_total and ifa.amount_40_percent %}
+                {% set calculated_percent = (ifa.amount_40_percent / ifa.amount_total * 100) | round(0) | int %}
+                {% endif %}
+
+                {% if is_doc %}
+                <span>{{ calculated_percent }}% of Total</span>
+                {% else %}
+                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 5px;">
+                    <input type="number" id="percentageInput" value="{{ calculated_percent }}"
+                        style="width: 60px; text-align: right; padding: 2px; border-bottom: 1px dashed #ccc; background:white;"
+                        min="0" max="100">
+                    <span>% of Total</span>
+                </div>
+                {% endif %}
+
+                {% if is_doc %}
+                <span class="doc-value" style="width: 150px; text-align: right; font-weight: bold;">{{
+                    ifa.amount_40_percent | currency if ifa else '' }}</span>
+                {% else %}
+                <input type="text" name="amount_40_percent"
+                    value="{{ ifa.amount_40_percent | currency if ifa else '' }}" id="inv40Percent" readonly
+                    style="width: 150px; text-align: right; font-weight: bold; background:transparent; border:none;">
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="sign">
+            <div class="sign-block">
+                <p><b>Prepared By</b></p>
+                <div style="margin-top: 30px;">
+                    {% if is_doc %}
+                    <div class="doc-multiline" style="text-align: center;">{{ ifa.prepared_by if ifa else '' }}</div>
+                    {% else %}
+                    <select name="prepared_by" style="width: 100%; text-align: center;">
+                        <option value="" disabled {% if not ifa or not ifa.prepared_by %}selected{% endif %}>Select
+                        </option>
+                        <option value="John Doe" {% if ifa and ifa.prepared_by=='John Doe' %}selected{% endif %}>John
+                            Doe</option>
+                        <option value="Jane Smith" {% if ifa and ifa.prepared_by=='Jane Smith' %}selected{% endif %}>
+                            Jane Smith</option>
+                        <option value="Robert Johnson" {% if ifa and ifa.prepared_by=='Robert Johnson' %}selected{%
+                            endif %}>Robert Johnson</option>
+                        <option value="Emily Davis" {% if ifa and ifa.prepared_by=='Emily Davis' %}selected{% endif %}>
+                            Emily Davis</option>
+                    </select>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="sign-block">
+                <p><b>Approved By</b></p>
+                <div style="margin-top: 30px;">
+                    {% if is_doc %}
+                    <div class="doc-multiline" style="text-align: center;">{{ ifa.approved_by if ifa else '' }}</div>
+                    {% else %}
+                    <select name="approved_by" style="width: 100%; text-align: center;">
+                        <option value="" disabled {% if not ifa or not ifa.approved_by %}selected{% endif %}>Select
+                        </option>
+                        <option value="Director Operations" {% if ifa and ifa.approved_by=='Director Operations'
+                            %}selected{% endif %}>Director Operations</option>
+                        <option value="Plant Manager" {% if ifa and ifa.approved_by=='Plant Manager' %}selected{% endif
+                            %}>Plant Manager</option>
+                        <option value="CFO" {% if ifa and ifa.approved_by=='CFO' %}selected{% endif %}>CFO</option>
+                        <option value="CEO" {% if ifa and ifa.approved_by=='CEO' %}selected{% endif %}>CEO</option>
+                    </select>
+                    {% endif %}
+                    <input type="text" value="Manager Procurement" readonly
+                        style="text-align: center; margin-top: 5px; border:none; background:transparent;">
+                </div>
+            </div>
+        </div>
+
+        {% if is_admin %}
+        <div class="admin-controls">
+            <h3 style="margin-bottom: 20px; color: var(--primary-color);">Admin Actions</h3>
+            <button type="submit" class="btn btn-primary" style="padding: 12px 30px;">
+                <i class="fas fa-save" style="margin-right: 8px;"></i> Save Changes
+            </button>
+        </div>
+        </div>
+        {% endif %}
+    </form>
+
+    {% if not is_admin and not is_ceo %}
+    {% if ifa and user_role == 'USER' %}
+    <!-- Editing Existing Form (Always Allowed) -->
+    <div class="form-footer-actions">
+        <button type="button" id="btnUpdate" class="btn btn-primary icon-btn-right">
+            Update Changes <i class="fas fa-arrow-right" style="margin-left:8px;"></i>
+        </button>
+        <a href="{{ url_for('user_dashboard') }}" class="btn btn-secondary icon-btn-left">
+            Cancel
+        </a>
+    </div>
+    {% elif not ifa %}
+    <!-- New Form Submission -->
+    <div class="form-footer-actions">
+        <button type="button" id="btnSubmit" class="btn btn-primary icon-btn-right">
+            Submit Application <i class="fas fa-paper-plane" style="margin-left:8px;"></i>
+        </button>
+        <button type="button" id="btnReset" class="btn btn-secondary icon-btn-left">
+            <i class="fas fa-redo"></i> Reset
+        </button>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <!-- SUCCESS MODAL -->
+    {% if not is_doc %}
+    <div id="successModal" class="modal-overlay">
+        <div class="modal-box display-flex flex-column align-center">
+            <div style="font-size: 3rem; color: var(--success-color); margin-bottom: 15px;">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="dashboard-title" style="margin-bottom: 10px;">Submission Successful</div>
+            <div style="margin-bottom: 25px; color: #666;">Your IFA form has been successfully submitted .
+            </div>
+            <div class="d-flex justify-center" style="gap: 15px;">
+                <a href="#" id="downloadDocBtn" class="btn btn-primary" target="_blank"><i class="fas fa-file-pdf"></i>
+                    Download PDF</a>
+                <button onclick="closeSuccessModal()" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        function autoResize(textarea) {
+            textarea.style.height = 'auto'; // Reset height
+            textarea.style.height = textarea.scrollHeight + 'px'; // Set new height
+        }
+
+        // --- Auto-Calculation Logic ---
+
+        // Helper: Parse currency string to float
+        function parseCurrency(val) {
+            if (!val) return 0;
+            // Remove commas and spaces, keep digits and dot
+            let clean = val.replace(/,/g, '').trim();
+            // Handle if value comes formatted from python
+            // Assuming no conflicting currency symbols other than commas
+            return parseFloat(clean) || 0;
+        }
+
+        // Helper: Format float to Currency string (Indian Format)
+        function formatCurrency(num) {
+            // Using en-IN for Indian Numbering System (e.g. 1,00,000.00)
+            return num.toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function updatePOValue() {
+            const basic = parseCurrency(document.getElementById('poBasicPrice').value);
+
+            // Calculate GST Amount from Percentage
+            const percentEl = document.getElementById('gstPercentInput');
+            let percent = 0;
+            if (percentEl) {
+                percent = parseFloat(percentEl.value) || 0;
+            }
+
+            // GST Amount = Basic * (Percent / 100)
+            const gstAmount = basic * (percent / 100);
+
+            // Update Hidden GST Amount Field (for backend)
+            const gstHidden = document.getElementById('gstOnBasic');
+            if (gstHidden) {
+                gstHidden.value = gstAmount.toFixed(2); // Store raw float or fixed
+            }
+
+            // Update Total PO Value
+            const total = basic + gstAmount;
+            document.getElementById('totalPOValue').value = formatCurrency(total);
+
+            // --- AUTO-POPULATE BOTTOM FIELDS ---
+            // 1. Update Basic in Amount Box
+            const invBasic = document.getElementById('invBasic');
+            if (invBasic) {
+                if (document.activeElement !== invBasic) {
+                    invBasic.value = formatCurrency(basic);
+                }
+            }
+            // 2. Update GST in Amount Box
+            const invGst = document.getElementById('invGst');
+            if (invGst) {
+                if (document.activeElement !== invGst) {
+                    invGst.value = formatCurrency(gstAmount);
+                }
+            }
+
+            // 3. Trigger Invoice Total Update
+            updateInvoiceTotals(false);
+        }
+
+        function updateInvoiceTotals(syncToTop = true) {
+            const invBasicEl = document.getElementById('invBasic');
+            const invGstEl = document.getElementById('invGst');
+
+            if (!invBasicEl || !invGstEl) return;
+
+            const basic = parseCurrency(invBasicEl.value);
+            const gst = parseCurrency(invGstEl.value);
+
+            // --- SYNC BOTTOM -> TOP ---
+            if (syncToTop) {
+                // 1. Update Top Basic
+                const poBasic = document.getElementById('poBasicPrice');
+                if (poBasic) {
+                    poBasic.value = formatCurrency(basic);
+                }
+
+                // 2. Update Top GST % and Hidden Amount
+                let percentEl = document.getElementById('gstPercentInput');
+                if (basic > 0) {
+                    const newPercent = (gst / basic) * 100;
+                    if (percentEl) {
+                        // Avoid rapid flickering of decimals
+                        percentEl.value = newPercent.toFixed(2).replace(/[.,]00$/, "");
+                    }
+                }
+
+                // 3. Update Hidden GST Amount (Top)
+                const gstHidden = document.getElementById('gstOnBasic');
+                if (gstHidden) {
+                    gstHidden.value = gst.toFixed(2);
+                }
+
+                // 4. Update Top Total
+                const total = basic + gst;
+                const poTotal = document.getElementById('totalPOValue');
+                if (poTotal) {
+                    poTotal.value = formatCurrency(total);
+                }
+            }
+
+            // Get Percentage
+            let percentEl = document.getElementById('percentageInput');
+            let percent = 40; // default
+            if (percentEl) {
+                percent = parseFloat(percentEl.value) || 0;
+            }
+
+            const total = basic + gst;
+            document.getElementById('invTotal').value = formatCurrency(total);
+
+            const valPercent = total * (percent / 100);
+            document.getElementById('inv40Percent').value = formatCurrency(valPercent);
+        }
+
+        // Initialize on load for existing content
+        document.addEventListener("DOMContentLoaded", function () {
+            const textareas = document.querySelectorAll('textarea');
+            textareas.forEach(field => autoResize(field));
+
+            // Attach Event Listeners for Calculation
+            const poInputs = ['poBasicPrice'];
+            poInputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', updatePOValue);
+            });
+
+            // GST Percentage Listener
+            const gstPercentInput = document.getElementById('gstPercentInput');
+            if (gstPercentInput) {
+                gstPercentInput.addEventListener('input', updatePOValue);
+
+                // Initialize Percentage on Load if editing
+                const savedGstAmount = parseFloat(document.getElementById('gstOnBasic').value) || 0;
+                const savedBasic = parseCurrency(document.getElementById('poBasicPrice').value);
+
+                if (savedBasic > 0 && savedGstAmount > 0) {
+                    const calcPercent = (savedGstAmount / savedBasic) * 100;
+                    gstPercentInput.value = calcPercent.toFixed(2).replace(/[.,]00$/, "");
+                }
+            }
+
+            const invInputs = ['invBasic', 'invGst'];
+            invInputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', function () {
+                    updateInvoiceTotals(true);
+                });
+            });
+
+            // Percentage Input Listener
+            const percentInput = document.getElementById('percentageInput');
+            if (percentInput) {
+                percentInput.addEventListener('input', function () { // Update 40% value only
+                    updateInvoiceTotals(false);
+                });
+            }
+
+            // --- Load Dynamic Dropdowns ---
+            loadDynamicDropdowns();
+
+            // --- External Button & Submit Logic ---
+            const form = document.getElementById('ifaForm');
+            const btnSubmit = document.getElementById('btnSubmit');
+            const btnUpdate = document.getElementById('btnUpdate');
+            const btnReset = document.getElementById('btnReset');
+
+            // Check if this is a user submission or update check
+            const isUserSubmit = form.action.includes('/ifa/submit');
+            const isUserUpdate = form.action.includes('/update');
+
+            const activeBtn = isUserSubmit ? btnSubmit : (isUserUpdate ? btnUpdate : null);
+
+            // Handle External Buttons
+            if (activeBtn) {
+
+                // Submit/Update Click
+                activeBtn.addEventListener('click', function () {
+                    if (form.checkValidity()) {
+                        // Dispatch submit event to trigger handler below
+                        form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                    } else {
+                        form.reportValidity();
+                    }
+                });
+
+                // Reset Click
+                if (btnReset) {
+                    btnReset.addEventListener('click', function () {
+                        if (confirm('Are you sure you want to reset the form?')) {
+                            form.reset();
+                        }
+                    });
+                }
+
+                // Form Submit Handling
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    // if (!confirm('Submit this IFA for approval?')) return; // Removed as per request
+
+                    const formData = new FormData(form);
+                    activeBtn.disabled = true;
+                    // Preserve original text
+                    const originalText = activeBtn.innerHTML;
+                    activeBtn.innerHTML = "Processing... <span>&rarr;</span>";
+
+                    fetch(form.action, {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(response => {
+                            if (response.headers.get("content-type") && response.headers.get("content-type").indexOf("application/json") !== -1) {
+                                return response.json();
+                            } else {
+                                // If not JSON (e.g. redirect for admin or error), maybe handle or throw
+                                // But for our specific user routes we expect JSON now
+                                if (response.ok) {
+                                    // If backend returned redirect but we caught it? 
+                                    // fetch follows redirects transparently usually.
+                                    // If we landed on a page (HTML), this check fails.
+                                    // Assuming we are strict about JSON for these actions.
+                                    throw new Error("Server returned non-JSON response");
+                                }
+                                throw new Error("Server error " + response.status);
+                            }
+                        })
+                        .then(data => {
+                            if (data.message === 'Form Submitted Successfully' || data.message === 'Form Updated Successfully') {
+                                // Update modal title if needed
+                                const modalTitle = document.querySelector('#successModal .dashboard-title');
+                                if (modalTitle) {
+                                    modalTitle.textContent = data.message === 'Form Updated Successfully' ? 'Update Successful' : 'Submission Successful';
+                                }
+                                const modalMsg = document.querySelector('#successModal .dashboard-title + div');
+                                if (modalMsg) {
+                                    modalMsg.textContent = data.message === 'Form Updated Successfully' ? 'Your IFA form has been successfully updated.' : 'Your IFA form has been successfully submitted.';
+                                }
+
+                                openSuccessModal(data);
+                            } else if (data.error) {
+                                alert("Error: " + data.error);
+                                activeBtn.disabled = false;
+                                activeBtn.innerHTML = originalText;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert("An error occurred during processing.");
+                            activeBtn.disabled = false;
+                            activeBtn.innerHTML = originalText;
+                        });
+                });
+            }
+        });
+
+        const modal = document.getElementById('successModal');
+        const downloadDocBtn = document.getElementById('downloadDocBtn');
+
+        function openSuccessModal(data) {
+            // Set download link
+            // Route: /ifa/<id>/download_doc
+            downloadDocBtn.href = `/ifa/${data.id}/download_doc`;
+
+            modal.style.display = 'flex';
+            // Force reflow
+            void modal.offsetWidth;
+            modal.classList.add('show');
+            document.body.classList.add('modal-open');
+        }
+
+        function closeSuccessModal() {
+            modal.classList.remove('show');
+            document.body.classList.remove('modal-open');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                window.location.href = "{{ url_for('user_dashboard') }}";
+            }, 300);
+        }
+
+        // Close on outside click
+        window.onclick = function (event) {
+            if (event.target == modal) {
+                closeSuccessModal();
+            }
+        }
+
+        // Close on ESC
+        document.addEventListener('keydown', function (event) {
+            if (event.key === "Escape" && modal.style.display === 'flex') {
+                closeSuccessModal();
+            }
+        });
+
+        // --- Dynamic Dropdown Loading ---
+        function loadDynamicDropdowns() {
+            // Map of field names to their categories
+            const dropdownMapping = {
+                'to_person': 'to_person',
+                'project_name': 'project_name',
+                'prepared_by': 'prepared_by',
+                'approved_by': 'approved_by'
+            };
+
+            // Load options for each dropdown
+            Object.keys(dropdownMapping).forEach(fieldName => {
+                const category = dropdownMapping[fieldName];
+                const selectElement = document.querySelector(`select[name="${fieldName}"]`);
+
+                if (!selectElement) return; // Skip if element doesn't exist (e.g., in doc view)
+
+                // Store current selected value
+                const currentValue = selectElement.value;
+
+                // Fetch options from API
+                fetch(`/api/dropdown-options/${category}`)
+                    .then(response => response.json())
+                    .then(options => {
+                        // Clear existing options except the first placeholder
+                        const placeholder = selectElement.querySelector('option[disabled]');
+                        selectElement.innerHTML = '';
+
+                        // Re-add placeholder
+                        if (placeholder) {
+                            selectElement.appendChild(placeholder);
+                        } else {
+                            const defaultOption = document.createElement('option');
+                            defaultOption.value = '';
+                            defaultOption.disabled = true;
+                            defaultOption.selected = !currentValue;
+                            defaultOption.textContent = 'Select...';
+                            selectElement.appendChild(defaultOption);
+                        }
+
+                        // Add options from database
+                        options.forEach(opt => {
+                            const option = document.createElement('option');
+                            option.value = opt.value;
+                            option.textContent = opt.value;
+
+                            // Restore previously selected value
+                            if (opt.value === currentValue) {
+                                option.selected = true;
+                            }
+
+                            selectElement.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error(`Error loading ${category} options:`, error);
+                    });
+            });
+        }
+    </script>
+    {% if is_doc %}
+    <script>
+        window.addEventListener('load', function () {
+            setTimeout(function () {
+                window.print();
+            }, 500);
+        });
+    </script>
+    {% endif %}
+</body>
+
+</html>
